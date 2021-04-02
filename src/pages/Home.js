@@ -4,27 +4,20 @@ import {
   Text,
   SafeAreaView,
   StyleSheet,
-  ScrollView,
-  FlatList,
-  ActivityIndicator,
-  RefreshControl,
+  useWindowDimensions,
 } from 'react-native';
-import {genresIcon, greyColor, primaryColor} from '../constants';
+import {primaryColor} from '../constants';
 import {useSelector, useDispatch} from 'react-redux';
 import {getGenres} from '../redux/actions/genreAction';
 import {getMovies} from '../redux/actions/movieAction';
-import CardGenres from '../components/CardGenres';
-import CardMovies from '../components/CardMovies';
-import {scrollIsCloseToBottom} from '../helpers';
-
-const discoverGenre = {
-  id: 1,
-  name: 'Discover',
-};
+import {TabView, TabBar} from 'react-native-tab-view';
+import TabList from './TabList';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const Home = ({navigation}) => {
-  const [genresItem, setGenresItem] = useState();
-  const [scrollOffset, setScrrollOffset] = useState(null);
+  const layout = useWindowDimensions();
+
+  const [index, setIndex] = useState(0);
 
   const genresState = useSelector(state => state.genresState);
   const movieState = useSelector(state => state.moviesState);
@@ -32,30 +25,19 @@ const Home = ({navigation}) => {
 
   useEffect(() => {
     _getData();
-  }, []);
-
-  const setGenre = val => {
-    dispatch({
-      type: 'FILTER_BY_GENRE_START',
-      genre: val,
-    });
-  };
+    _getMovies();
+  }, [index]);
 
   const _getData = () => {
-    setGenresItem(discoverGenre);
-    setGenre('');
     dispatch(getGenres());
-    dispatch(getMovies());
   };
 
-  const _onClickGenres = item => {
-    setGenre(item.id === 1 ? '' : item.id);
-    setGenresItem(item);
-    dispatch(getMovies());
-  };
-
-  const _movieClick = item => {
-    navigation.navigate('Detail', {item});
+  const _setGenre = () => {
+    let genre = genresState.genres.filter((item, i) => {
+      return i === index;
+    });
+    let g = genre[0]?.id === 1 ? '' : genre[0]?.id;
+    dispatch({type: 'FILTER_BY_GENRE_START', genre: g});
   };
 
   const _handleEndOfScroll = () => {
@@ -74,65 +56,72 @@ const Home = ({navigation}) => {
     dispatch(getMovies(params));
   };
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.listGenre}>
-        <FlatList
-          horizontal={true}
-          showsHorizontalScrollIndicator={false}
-          data={[discoverGenre, ...genresState?.genres]}
-          keyExtractor={item => item.id.toString()}
-          renderItem={({item, index}) => (
-            <CardGenres
-              item={item}
-              index={index}
-              icon={genresIcon[index]}
-              onClickGenres={() => _onClickGenres(item)}
-              genresSelected={genresItem}
-            />
-          )}
-        />
-      </View>
-      <ScrollView
-        refreshControl={
-          <RefreshControl
-            refreshing={movieState.refreshing}
-            onRefresh={_refreshData}
-          />
-        }
-        onScroll={({nativeEvent}) => {
-          const currentOffset = nativeEvent.contentOffset.y;
-          setScrrollOffset(currentOffset);
-          const direction = currentOffset > scrollOffset ? 'down' : 'up';
+  const _getMovies = () => {
+    genresState.genres.length > 0 && _setGenre();
+    dispatch(getMovies());
+  };
 
-          if (direction === 'down' && scrollIsCloseToBottom(nativeEvent)) {
-            _handleEndOfScroll();
-          }
-        }}>
-        {movieState.loading && !movieState.loadMore ? (
-          <ActivityIndicator
-            color={primaryColor}
-            size={'large'}
-            style={{marginTop: 10}}
-          />
-        ) : (
-          <View style={styles.listMovie}>
-            {movieState.movies.map((item, index) => (
-              <CardMovies
-                key={index}
-                item={item}
-                index={index}
-                onClick={() => _movieClick(item)}
-              />
-            ))}
+  const renderTabBar = props => {
+    return (
+      <TabBar
+        {...props}
+        scrollEnabled
+        indicatorContainerStyle={styles.tabBar}
+        indicatorStyle={styles.tabBarIndicator}
+        renderLabel={({route, focused, color}) => (
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginHorizontal: 5,
+            }}>
+            <Icon
+              color={focused ? primaryColor : '#CACACA'}
+              name={route.icon}
+              size={22}
+            />
+            <Text
+              style={[
+                styles.tabBarLabel,
+                focused ? styles.tabBarLabelActive : {},
+              ]}>
+              {route.title}
+            </Text>
           </View>
         )}
-        {movieState.loadMore ? (
-          <View style={{marginBottom: 10}}>
-            <ActivityIndicator color={primaryColor} />
-          </View>
-        ) : null}
-      </ScrollView>
+        tabStyle={genresState.genres.length > 0 ? {width: 'auto'} : {}}
+        style={styles.tabBar}
+      />
+    );
+  };
+
+  const renderScene = ({route, index}) => {
+    switch (route.key) {
+      case 'null':
+        return null;
+      default:
+        return (
+          <TabList
+            navigation={navigation}
+            item={route}
+            movies={movieState}
+            onRefresh={_refreshData}
+            onScroll={_handleEndOfScroll}
+          />
+        );
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <TabView
+        navigationState={{index, routes: genresState?.genres}}
+        renderScene={renderScene}
+        onIndexChange={setIndex}
+        initialLayout={{width: layout.width}}
+        renderTabBar={renderTabBar}
+      />
     </SafeAreaView>
   );
 };
@@ -151,6 +140,27 @@ const styles = StyleSheet.create({
   listMovie: {
     paddingHorizontal: 16,
     marginTop: 10,
+  },
+  tabBar: {
+    backgroundColor: '#fff',
+    elevation: 0,
+    shadowOpacity: 0,
+    borderBottomColor: '#f0f0f0',
+    borderBottomWidth: 0.5,
+  },
+  tabBarIndicator: {
+    backgroundColor: primaryColor,
+  },
+  tabBarLabel: {
+    color: '#CACACA',
+    fontWeight: 'bold',
+    fontSize: 16,
+    marginLeft: 10,
+  },
+  tabBarLabelActive: {
+    color: primaryColor,
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });
 

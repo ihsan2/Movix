@@ -26,7 +26,7 @@
 
 ## Release APK
 
-<a href="https://drive.google.com/file/d/1KITUrhUslipD4VjoR5yh81YFZ6V40p46/view?usp=sharing">
+<a href="https://drive.google.com/file/d/1IY-3OjiwpmL53gIEC0Ntn_8I8hmAlfBS/view?usp=sharing">
   <img src="https://img.shields.io/badge/Download%20on%20the-Google%20Drive-blue.svg?style=popout&logo=google-drive"/>
 </a>
 

@@ -23,8 +23,6 @@ const Detail = ({navigation, route}) => {
   const [load, setLoad] = useState(false);
   const [video, setVideo] = useState(null);
 
-  console.log('v', video);
-
   useEffect(() => {
     _getDetail();
     _getVideo();
@@ -51,8 +49,6 @@ const Detail = ({navigation, route}) => {
         `https://api.themoviedb.org/3/movie/${item.id}/videos?api_key=${api_key}&language=en-US`,
       )
       .then(resp => {
-        console.log('v', resp.data.results[0]);
-
         setVideo(resp.data.results[0]);
       })
       .catch(err => {

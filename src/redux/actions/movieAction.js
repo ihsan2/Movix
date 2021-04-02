@@ -29,8 +29,8 @@ export const getMovies = ({refreshing = false, loadMore = false} = {}) => {
           type: 'GET_MOVIES_SUCCESS',
           payload: resp.data,
           loadMore,
-          genre,
           page,
+          genre,
         });
       })
       .catch(err => {

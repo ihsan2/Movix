@@ -17,7 +17,7 @@ export default function reducer(state = initialState, action) {
         ...state,
         loading: false,
         refreshing: false,
-        genres: action.payload.genres,
+        genres: action.payload,
       };
     case 'GET_GENRES_FAIL':
       return {...state, loading: false, refreshing: false};
